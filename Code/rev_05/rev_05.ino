@@ -1,16 +1,4 @@
-//    Final Project Start     //
-
-
-
-
-/*
-Code for only ultrasonic sensor rading info
-
-Code for only the slave
-
-
-** pot values range from 0 to 1023
-*/
+//    Slave Code   //
 
 #define echoPin \
   2  // attach pin D2 Arduino to pin Echo of HC-SR04
@@ -35,11 +23,6 @@ void setup() {
     // Serial Communication is starting with 9600 of
   // baudrate speed
   Serial.begin(9600);
-
-  // The text to be printed in serial monitor
-  //Serial.println(
-  //  "Distance measurement using Arduino Uno.");
-  //delay(500);
 }
 
 void loop() {
@@ -59,20 +42,11 @@ void loop() {
                LOW);  // Turn off the pulse trigger to stop
                       // pulse generation
 
-  
-  // If pulse reached the receiver echoPin
-  // become high Then pulseIn() returns the
-  // time taken by the pulse to reach the
-  // receiver
 
   duration = pulseIn(echoPin, HIGH);
   distance = duration * 0.0344 / 2;  // Expression to calculate
                                      // distance using time
 
-  //Serial.print("Distance: ");
-  //Serial.print(
-   // distance);  // Print the output in serial monitor
-  //Serial.println(" cm");
   delay(100);
   if (distance < 35) {
     //Serial.print("Distance = Less than 5cm");
@@ -83,25 +57,6 @@ void loop() {
   {
     digitalWrite(outputPin, HIGH);
   }
-
-/*
-  if(outputPin >= 3){           //also take these out
-    //Serial.print("high");
-    //Serial.println();
-  }
-  else if(outputPin < 3){
-    //Serial.print("low");
-    //Serial.println();
-  }
-  else{
-    //Serial.print("other");
-    //Serial.print(outputPin);
-  }
-  Serial.print(state); // take these out for faster code
-  Serial.println();   // take these out for faster code
-*/
-
-
 }  ///// end of program
 
 
