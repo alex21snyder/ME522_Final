@@ -74,7 +74,7 @@ void loop() {
    // distance);  // Print the output in serial monitor
   //Serial.println(" cm");
   delay(100);
-  if (distance < 5) {
+  if (distance < 35) {
     //Serial.print("Distance = Less than 5cm");
     //Serial.println();
     digitalWrite(outputPin, LOW);

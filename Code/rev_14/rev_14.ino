@@ -1,23 +1,4 @@
-//    Final Project Start     //
-
-
-//add two motors then encoperate potentiometer
-
-/*
-I take a guess that pin 9 should be like pin 1 on H bridge
-this is where it gets tricky, 1 and 9 are both connected to normal power. 
-I will try connecting 9 and 1 to pin 6 on arduino together
-
-Its being difficult so i will try to have 2 speed pins lol
-
-
-if you want ot be able to make it run more than 1 turn, you have to make a new variable that is not starttime but secondardy time orsomething like that
-
-
-** pot values range from 0 to 1023
-** if you are using green, make it right next to yellow
-** must increase distance to 10, probably 15
-*/
+//    Final Project    //
 
 // DECLARE VARIABLES
 
@@ -28,6 +9,10 @@ const int foward_pin3 = 10; //foward pin for motor 2
 const int backward_pin4 = 9; //backward pin for motor 2
 const int but_pin = 2; // pin for button 
 int but; //start button
+unsigned long startTime;
+unsigned long Time_2;
+unsigned long Time_3;
+
 
 //potentiometer variables
 const int potpin = A0; //potentiometer input
@@ -35,9 +20,14 @@ const int speedpin = 6; //controlled by potentiometer
 int pot;
 int speed;
 
+const int thresh_0 = 700;
+const int thresh_1 = 800; //threshold for potentiomter values returned
+const int thresh_2 = 900;
+const int thresh_max = 1023;
+
 //ultrasonic variables
 const int ultrainput = 3; // input pin from ultrasonic sensor
-unsigned long startTime;
+
 int ultra_val;
 int turnspeed;
 
@@ -49,56 +39,68 @@ const int blue = 7; //rgb blue pin
 const int green = 5; //rgb green pin
 const int red = 4; //rgb red pin
 
-const int thresh_1 = 600; //threshold for potentiomter values returned
-const int thresh_2 = 810;
-const int thresh_max = 1023;
+//photo sensor variables
+const int pResistor = A1; // Photoresistor at Arduino analog pin A0
+const int ledPin= A2;       // Led pin at Arduino pin 9
+const int ledPin2= A3;       // Led pin at Arduino pin 9
+int photo_value;				  // Store value from photoresistor (0-1023)
+
+
 
 
 void setup() {
-  //delay(1000);
+  
   Serial.begin(9600);  // serial baud to communicate to serial monitor
+
+  // DECLARE INPUTS AND OUTPUTS
+
+  // motor I/O
   pinMode(foward_pin1,OUTPUT);
   pinMode(backward_pin2, OUTPUT);
   pinMode(foward_pin3,OUTPUT);
   pinMode(backward_pin4, OUTPUT);
-  
+
+  // start button I/O
   pinMode(but_pin, INPUT_PULLUP); // inilize push button with internal pull up resistor (start button)
 
+  // ultrasonic I/O
   pinMode(ultrainput, INPUT_PULLUP); // initialize ultrasonic sensor pin to high
-
+  
+  // buzzer I/O
   pinMode(buzzer, OUTPUT); // for buzzer
 
+  // rgb I/O
   pinMode(blue, OUTPUT);
   pinMode(green, OUTPUT);
   pinMode(red, OUTPUT);
 
+  // headlight led I/O
+  pinMode(ledPin, OUTPUT);  // Set lepPin - 9 pin as an output
+  pinMode(ledPin2, OUTPUT);  // Set lepPin - 9 pin as an output
+  pinMode(pResistor, INPUT);// Set pResistor - A0 pin as an input (optional)
 
-  // initililize motors low (need to add backward pins as well)
+  // TURN OFF ALL MOTORS AND LEDS (poss add headlightes)
   digitalWrite(foward_pin1, LOW);
   digitalWrite(foward_pin3, LOW);
   digitalWrite(backward_pin2, LOW);
   digitalWrite(backward_pin4, LOW);
-  // initilize rgb to low
   digitalWrite(blue, LOW);
   digitalWrite(red, LOW);
   digitalWrite(green, LOW);
-
 }
 
 
 void loop() {
-
-
- but = digitalRead(but_pin); // but variable represents the input from physical button
- pot = analogRead(potpin);
+  
+ //DEFINE VARIABLES (these variables can change value each iteration)
+ but = digitalRead(but_pin); // input from physical button (1 not pushed, 0 pushed)
+ pot = analogRead(potpin); // potentiometer value (0-1023)
+ photo_value = analogRead(pResistor); // value from photosensor
  speed = map(pot,0,1023,0,255); // analog returns 0-1023, anaolg write = between 0-255
  analogWrite(speedpin,speed); // still needs HIGH command from digital write to move motor
- //Serial.print(pot);
- //Serial.print('\n');
-
- //photo sensor code go here (first in loop)
- // led decide here based on pot value i think
- if(pot <= thresh_1){ //green
+ 
+ // RGB LED 
+ if(pot <= thresh_1 && pot >= thresh_0){ //green
   digitalWrite(green, HIGH);
   digitalWrite(red, LOW);
  }
@@ -106,59 +108,89 @@ void loop() {
   digitalWrite(green, HIGH);
   digitalWrite(red, HIGH);
  }
- else{
+ else if(pot > thresh_2){
   digitalWrite(green, LOW);
   digitalWrite(red, HIGH);
  }
+ else{
+  digitalWrite(green, LOW);
+  digitalWrite(red, LOW);
+ }
+
+ //  HEADLIGHTS
+ if (photo_value > 700){
+    digitalWrite(ledPin, LOW);  //Turn led off
+    digitalWrite(ledPin2, LOW);  //Turn led off
+    //Serial.print("hi");
+  }
+  else{
+    digitalWrite(ledPin, HIGH); //Turn led on
+    digitalWrite(ledPin2, HIGH); //Turn led on
+  }
+  delay(100); //Small delay
 
 
 
- if(but == LOW){ // START BUTTON PRESSSED
+ // START BUTTON PRESSED
+
+ if(but == LOW){ // if button pressed
   
-  startTime = millis(); //record start time
+  startTime = millis(); //record current time
 
-  while(millis() - startTime < 5000){
-    digitalWrite(foward_pin1, HIGH); // 
-    digitalWrite(foward_pin3, HIGH);
-    ultra_val = digitalRead(ultrainput);
-    if(ultra_val == LOW){
+  while(millis() - startTime < 20000){ //run button loop for 5 seconds
+    digitalWrite(foward_pin1, HIGH); // drive straight
+    digitalWrite(foward_pin3, HIGH); // ^^
+    digitalWrite(backward_pin2, LOW);
+    digitalWrite(backward_pin4, LOW);
+  
 
-      digitalWrite(foward_pin1, LOW); // 
-      digitalWrite(foward_pin3, LOW);
+    ultra_val = digitalRead(ultrainput); // constantly see if object infront of it (info from slave)
+    if(ultra_val == LOW){ // if object infront
+      digitalWrite(foward_pin1, LOW); // stop motors
+      digitalWrite(foward_pin3, LOW);// ^^
+      digitalWrite(backward_pin2, LOW);
+      digitalWrite(backward_pin4, LOW);
+  
       
-      startTime = millis(); //record start time
-      while(millis()- startTime < 1000){
+      Time_2 = millis(); //record start time
+      while(millis()- Time_2 < 1000){ //turn buzzer on for 1 sec
         tone(buzzer, 261);
       }
-      noTone(buzzer);
-      startTime = millis();
+      noTone(buzzer); // 
+      
+      Time_3 = millis();
 
-
-
-      //triple if statment here w variable name for time required to turn for each pot val (5000 turns to that var) (high med low times)
-      if(pot >= 0){
-        turnspeed = 5000; // time turning !!!
+      // turn speed selector
+      if(pot <= thresh_1){ // slow speed turn value here
+        turnspeed = 1900; // time turning !!!
       }
-      while(millis() - startTime < turnspeed){
+      else if(pot <= thresh_2 & pot > thresh_1){ 
+        turnspeed = 1225;// middle speed turn value here
+      }
+      else{ 
+        turnspeed = 750;//fast turn speed here
+      }
+      while(millis() - Time_3 < turnspeed){
         digitalWrite(foward_pin1, LOW); //
         digitalWrite(foward_pin3, HIGH); //
         //digitalWrite(backward_pin4, LOW); //
         //digitalWrite(backward_pin2, LOW);
         digitalWrite(backward_pin2, HIGH);
+        digitalWrite(backward_pin4, LOW);
 
       }
-      break;
+      //break;
     }
     //if statment with break here
   }
-  digitalWrite(foward_pin1, LOW); // 
+  digitalWrite(foward_pin1, LOW); // could make this function if i want
   digitalWrite(foward_pin3, LOW);
   digitalWrite(backward_pin2, LOW);
   digitalWrite(backward_pin4, LOW);
   Serial.print(pot);
   Serial.print('\n');
  }
- else{
+ else{ //no motion if button not pressed
   digitalWrite(foward_pin1, LOW);
   digitalWrite(foward_pin3, LOW);
   digitalWrite(backward_pin2, LOW);
